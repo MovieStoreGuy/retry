@@ -55,9 +55,11 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 	if f == nil {
 		return errors.New(`invalid function provided`)
 	}
+
 	for _, p := range r.pre {
 		p()
 	}
+
 	for rem := limit; rem > 0; rem-- {
 		select {
 		case <-ctx.Done():
@@ -77,10 +79,12 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 				return err
 			}
 		}
+
 		r.log.Error(`Failed to execute function`, zap.Error(err), zap.Int(`remaining-attempts`, rem))
 		for _, p := range r.post {
 			p()
 		}
 	}
+
 	return ErrAttemptsExceeded
 }

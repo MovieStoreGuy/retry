@@ -111,6 +111,7 @@ func TestInvalidOptions(t *testing.T) {
 		retry.WithExponentialBackoff(-time.Second, 1.0),
 		retry.WithExponentialBackoff(time.Second, 0.0),
 		retry.WithExponentialBackoff(0, 1.0),
+		retry.WithDynamicDelay(nil),
 	}
 
 	for _, opt := range invalid {
@@ -130,6 +131,7 @@ func TestValidOption(t *testing.T) {
 		retry.WithFixedDelay(time.Second),
 		retry.WithJitter(time.Second),
 		retry.WithExponentialBackoff(time.Second, 2.8),
+		retry.WithDynamicDelay(new(int64)),
 	}
 
 	for _, opt := range valid {
@@ -148,6 +150,7 @@ func TestWithAppliedOptions(t *testing.T) {
 		{retry.WithLogger(log), retry.WithFixedDelay(10 * time.Millisecond)},
 		{retry.WithLogger(log), retry.WithJitter(10 * time.Millisecond)},
 		{retry.WithLogger(log), retry.WithFixedDelay(time.Millisecond), retry.WithExponentialBackoff(10*time.Millisecond, 2.4)},
+		{retry.WithLogger(log), retry.WithDynamicDelay(new(int64))},
 	}
 
 	for _, apply := range opts {

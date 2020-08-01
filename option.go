@@ -39,6 +39,26 @@ func WithFixedDelay(delay time.Duration) Option {
 	}
 }
 
+// WithDynamicDelay allows for a reference to a delay variable to be held external to
+// the underlying retryer to allow for services such as rate limiters to impose
+func WithDynamicDelay(delay *int64) Option {
+	return func(r *retry) error {
+		if delay == nil {
+			return errors.New(`delay reference is nil`)
+		}
+		r.post = append(r.post, func() {
+			t := time.Duration(atomic.LoadInt64(delay))
+			if t < 0 {
+				r.log.Info(`Delay is negative, skipping`, zap.Duration(`delay`, t), zap.String(`step`, `dynamic-delay`))
+				return // Delay is negative so no value in pausing execution
+			}
+			r.log.Info(`Delaying execution`, zap.Duration(`delay`, t), zap.String(`step`, `dynamic-delay`))
+			time.Sleep(t)
+		})
+		return nil
+	}
+}
+
 // WithJitter generates a random sleep interval between [0, delay) to help spread retry
 // attemps over different intervals
 func WithJitter(delay time.Duration) Option {
