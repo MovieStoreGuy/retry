@@ -69,6 +69,27 @@ func WithRetryOnResponseCodes(codes ...int) Option {
 	}
 }
 
+// WithRetryUntilResponseCodes will force the system to retry until one of the
+// provided codes is meet.
+func WithRetryUntilResponseCodes(codes ...int) Option {
+	table := make(map[int]struct{}, len(codes))
+	for _, code := range codes {
+		table[code] = struct{}{}
+	}
+	return func(cf *config) error {
+		if len(codes) == 0 {
+			return errors.New(`requires at least one response code to compare against`)
+		}
+		cf.checks = append(cf.checks, func(resp *http.Response) error {
+			if _, ok := table[resp.StatusCode]; ok {
+				return nil
+			}
+			return fmt.Errorf(`unmatched status code %d, continue retrying`, resp.StatusCode)
+		})
+		return nil
+	}
+}
+
 // WithRateLimitCheck allows for dynamic delay based on returned headers from
 // the response. The function must return a positive Duration and true in order to apply
 // the delay once exceeded the allowed rate limit
