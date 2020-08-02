@@ -53,9 +53,9 @@ func New(rt http.RoundTripper, attempts int, opts ...Option) (http.RoundTripper,
 	}, nil
 }
 
-// DefaultTransport uses the default http.DefaultTransport as the RoundTripper to be used
+// Default uses the default http.DefaultTransport as the RoundTripper to be used
 // with the retry ability applied to it.
-func DefaultTransport(attempts int, opts ...Option) (http.RoundTripper, error) {
+func Default(attempts int, opts ...Option) (http.RoundTripper, error) {
 	return New(http.DefaultTransport, attempts, opts...)
 }
 

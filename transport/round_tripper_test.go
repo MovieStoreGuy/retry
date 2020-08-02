@@ -31,19 +31,19 @@ func TestCreatingTransport(t *testing.T) {
 	}
 
 	for _, opts := range invalid {
-		tr, err := transport.DefaultTransport(1, opts...)
+		tr, err := transport.Default(1, opts...)
 		assert.Error(t, err)
 		assert.Panics(t, func() {
 			transport.Must(tr, err)
 		})
 	}
 	assert.Panics(t, func() {
-		transport.Must(transport.DefaultTransport(0))
+		transport.Must(transport.Default(0))
 	})
 	assert.Panics(t, func() {
 		transport.Must(transport.New(nil, 0))
 	})
 	assert.NotPanics(t, func() {
-		transport.Must(transport.DefaultTransport(1))
+		transport.Must(transport.Default(1))
 	})
 }
