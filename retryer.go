@@ -59,7 +59,9 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 	for _, p := range r.pre {
 		p()
 	}
-
+	// Since limit is not being check if negative, the default assumes all
+	// avaliable attempts have been exceeded
+	err := errors.New(`exceeded allowed attempts`)
 	for rem := limit; rem > 0; rem-- {
 		select {
 		case <-ctx.Done():
@@ -68,16 +70,15 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 		default:
 			// Avoid indefinate waiting on context to finish
 		}
-		err := f()
-		switch err {
-		case nil:
-			return nil // Successful attempt marked and returning
-		default:
-			// Checking if the function needs to bail on the attempts
-			// because we have been told that it is not possible to recover
-			if ok, err := CanRecover(err); !ok {
-				return err
-			}
+
+		if err = f(); err == nil {
+			return nil
+		}
+
+		// Check if err is marked as an abort error
+		// an exit from there
+		if HasAborted(err) {
+			return err
 		}
 
 		r.log.Error(`Failed to execute function`, zap.Error(err), zap.Int(`remaining-attempts`, rem))
@@ -85,6 +86,6 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 			p()
 		}
 	}
-
-	return ErrAttemptsExceeded
+	// Returns the last error recorded
+	return ExceededRetries(err.Error())
 }

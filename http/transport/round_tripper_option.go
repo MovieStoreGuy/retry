@@ -28,22 +28,26 @@ func WithRetryOptions(opts ...retry.Option) Option {
 
 // WithNoRetryOnResponseCodes will compare the given response code(s) to
 // what has been returned and if it matches, the retry function will stop retrying before
-// max attempts have been reached
+// max attempts have been reached.
+// To ensure that this check will stop retries, it is prepended to the start of retry checks.
 func WithNoRetryOnResponseCodes(codes ...int) Option {
 	table := make(map[int]struct{}, len(codes))
 	for _, code := range codes {
 		table[code] = struct{}{}
 	}
 	return func(cf *config) error {
-		cf.checks = append(cf.checks, func(resp *http.Response) error {
-			if resp == nil {
-				return errors.New(`response is nil`)
-			}
-			if _, exist := table[resp.StatusCode]; exist {
-				return retry.NoRecover(fmt.Sprintf(`unable to recover response status code: %d`, resp.StatusCode))
-			}
-			return nil
-		})
+		prepend := []func(*http.Response) error{
+			func(resp *http.Response) error {
+				if resp == nil {
+					return errors.New(`response is nil`)
+				}
+				if _, exist := table[resp.StatusCode]; exist {
+					return retry.AbortedRetries(fmt.Sprintf(`unable to recover response status code: %d`, resp.StatusCode))
+				}
+				return nil
+			},
+		}
+		cf.checks = append(prepend, cf.checks...)
 		return nil
 	}
 }

@@ -75,7 +75,7 @@ func (rt *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	err := retry.Must(rt.opts...).AttemptWithContext(req.Context(), rt.attempts, func() error {
 		r, err := rt.wrapped.RoundTrip(req)
 		if err != nil {
-			return retry.NoRecover(err.Error())
+			return retry.AbortedRetries(err.Error())
 		}
 
 		// Checking the response returned and if we fail any of the checks

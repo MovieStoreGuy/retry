@@ -2,12 +2,6 @@ package retry
 
 import (
 	"context"
-	"errors"
-)
-
-var (
-	// ErrAttemptsExceeded is return when number of attemps exceeds the allowed limit given
-	ErrAttemptsExceeded = errors.New(`exceeded allowed attempts`)
 )
 
 // Retryer abstracts the retry functionality of executing a function
