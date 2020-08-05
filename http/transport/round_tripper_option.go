@@ -36,6 +36,12 @@ func WithNoRetryOnResponseCodes(codes ...int) Option {
 		table[code] = struct{}{}
 	}
 	return func(cf *config) error {
+		for _, code := range codes {
+			if _, exist := cf.table[code]; exist {
+				return fmt.Errorf(`clash on response code [%d:%s]`, code, http.StatusText(code))
+			}
+			cf.table[code] = struct{}{}
+		}
 		prepend := []func(*http.Response) error{
 			func(resp *http.Response) error {
 				if resp == nil {
@@ -60,6 +66,12 @@ func WithRetryOnResponseCodes(codes ...int) Option {
 		table[code] = struct{}{}
 	}
 	return func(cf *config) error {
+		for _, code := range codes {
+			if _, exist := cf.table[code]; exist {
+				return fmt.Errorf(`clash on response code [%d:%s]`, code, http.StatusText(code))
+			}
+			cf.table[code] = struct{}{}
+		}
 		cf.checks = append(cf.checks, func(resp *http.Response) error {
 			if resp == nil {
 				return errors.New(`response is nil`)
@@ -83,6 +95,12 @@ func WithRetryUntilResponseCodes(codes ...int) Option {
 	return func(cf *config) error {
 		if len(codes) == 0 {
 			return errors.New(`requires at least one response code to compare against`)
+		}
+		for _, code := range codes {
+			if _, exist := cf.table[code]; exist {
+				return fmt.Errorf(`clash on response code [%d:%s]`, code, http.StatusText(code))
+			}
+			cf.table[code] = struct{}{}
 		}
 		cf.checks = append(cf.checks, func(resp *http.Response) error {
 			if _, ok := table[resp.StatusCode]; ok {

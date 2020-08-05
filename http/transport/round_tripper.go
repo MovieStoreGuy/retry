@@ -18,6 +18,7 @@ type retryTransport struct {
 type config struct {
 	rtOpts []retry.Option
 	checks []func(*http.Response) error
+	table  map[int]struct{}
 }
 
 var _ http.RoundTripper = &retryTransport{}
@@ -33,7 +34,7 @@ func New(rt http.RoundTripper, attempts int, opts ...Option) (http.RoundTripper,
 		return nil, errors.New(`attempts must be positive`)
 	}
 
-	cf := &config{}
+	cf := &config{table: make(map[int]struct{})}
 	for _, opt := range opts {
 		if err := opt(cf); err != nil {
 			return nil, err
