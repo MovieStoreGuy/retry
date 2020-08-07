@@ -37,7 +37,7 @@ func BenchmarkFailingTransport(b *testing.B) {
 		Transport: BenchTransport(http.DefaultTransport, func() {
 			b.ReportAllocs()
 			b.ResetTimer()
-		})}, b.N,
+		})}, 1,
 		transport.WithRetryUntilResponseCodes(200),
 	)
 	require.NoError(b, err)
@@ -45,8 +45,10 @@ func BenchmarkFailingTransport(b *testing.B) {
 	require.NoError(b, err)
 	b.ResetTimer()
 
-	if resp, err := c.Do(req); err == nil && resp != nil {
-		require.NoError(b, resp.Body.Close())
+	for i := 0; i < b.N; i++ {
+		if resp, err := c.Do(req); err == nil && resp != nil {
+			require.NoError(b, resp.Body.Close())
+		}
 	}
 	s.CloseClientConnections()
 

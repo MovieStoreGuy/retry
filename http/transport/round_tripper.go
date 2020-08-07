@@ -83,6 +83,9 @@ func (rt *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		// return the error without setting response to compile with the interface
 		for _, check := range rt.checks {
 			if err = check(r); err != nil {
+				if r.Body != nil {
+					r.Body.Close()
+				}
 				return err
 			}
 		}
