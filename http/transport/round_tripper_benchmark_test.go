@@ -5,9 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/MovieStoreGuy/retry/http/client"
 	"github.com/MovieStoreGuy/retry/http/transport"
-	"github.com/stretchr/testify/require"
 )
 
 type benchTransport struct {
@@ -36,7 +37,7 @@ func BenchmarkFailingTransport(b *testing.B) {
 	c, err := client.New(&http.Client{
 		Transport: BenchTransport(http.DefaultTransport, func() {
 			b.ReportAllocs()
-		})}, 4,
+		})}, 1,
 		transport.WithRetryUntilResponseCodes(200),
 	)
 	require.NoError(b, err)

@@ -11,7 +11,7 @@ import (
 	"github.com/MovieStoreGuy/retry/http/transport"
 )
 
-func ExampleDefault_WithOptions() {
+func ExampleDefault() {
 	c, err := client.Default(6, // Sets the static limit of allowed attempts
 		transport.WithNoRetryOnResponseCodes(http.StatusBadGateway, http.StatusServiceUnavailable), // Abort if the response matches one of these
 		transport.WithRetryUntilResponseCodes(http.StatusOK, http.StatusAccepted),                  // Keep retry the request until of these response codes has been returned
@@ -31,7 +31,7 @@ func ExampleDefault_WithOptions() {
 	_ = resp
 }
 
-func ExampleNew_WithCustomTransport() {
+func ExampleNew() {
 	t := &http.Transport{
 		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2 support
 	}

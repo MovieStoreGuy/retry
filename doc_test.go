@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ExampleNew_usage() {
+func ExampleNew() {
 	r, err := retry.New()
 	if err != nil {
 		panic(err)
@@ -24,7 +24,7 @@ func ExampleNew_usage() {
 	// Output: Woohoo
 }
 
-func ExampleNew_WithOptions() {
+func ExampleMust() {
 	log, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
