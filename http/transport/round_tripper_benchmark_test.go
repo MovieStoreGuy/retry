@@ -36,8 +36,7 @@ func BenchmarkFailingTransport(b *testing.B) {
 	c, err := client.New(&http.Client{
 		Transport: BenchTransport(http.DefaultTransport, func() {
 			b.ReportAllocs()
-			b.ResetTimer()
-		})}, 1,
+		})}, 4,
 		transport.WithRetryUntilResponseCodes(200),
 	)
 	require.NoError(b, err)
