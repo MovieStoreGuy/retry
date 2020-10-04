@@ -40,6 +40,14 @@ func Must(opts ...Option) Retryer {
 	return r
 }
 
+func (r *retry) Do(limit int, f func() error) error {
+	return r.Attempt(limit, f)
+}
+
+func (r *retry) DoWithContext(ctx context.Context, limit int, f func() error) error {
+	return r.AttemptWithContext(ctx, limit, f)
+}
+
 func (r *retry) Attempt(limit int, f func() error) error {
 	return r.do(context.Background(), limit, f)
 }

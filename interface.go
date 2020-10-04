@@ -6,6 +6,9 @@ import (
 
 // Retryer abstracts the retry functionality of executing a function
 type Retryer interface {
+	Do(limit int, f func() error) error
+
+	DoWithContext(ctx context.Context, limit int, f func() error) error
 
 	// Attempt will execute the function until it has reached the permissable limit
 	// that is passed. If the function was to return nil, the retry will exit early
