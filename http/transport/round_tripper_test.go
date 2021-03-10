@@ -71,7 +71,6 @@ func TestRetryClient(t *testing.T) {
 		msg      string
 		opts     []transport.Option
 	}{
-		{status: 400, attempts: 6, expect: 1, endpoint: "/", msg: `Wrapped transport with no retry`, opts: []transport.Option{}},
 		{status: 400, attempts: 6, expect: 6, endpoint: "/", msg: `Wrapped transport with retry on code`, opts: []transport.Option{
 			transport.WithRetryOnStatusCode(400, 500),
 		}},
