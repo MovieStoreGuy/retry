@@ -17,6 +17,7 @@ import (
 
 	"github.com/MovieStoreGuy/retry"
 	"github.com/MovieStoreGuy/retry/http/client"
+	"github.com/MovieStoreGuy/retry/http/status"
 	"github.com/MovieStoreGuy/retry/http/transport"
 )
 
@@ -25,7 +26,6 @@ func TestCreatingTransport(t *testing.T) {
 	invalid := [][]transport.Option{
 		{transport.WithRetryOptions(retry.WithLogger(nil))},
 		{transport.WithRetryOptions(nil)},
-		{transport.WithRateLimitCheck(nil)},
 	}
 
 	for _, opts := range invalid {
@@ -71,17 +71,15 @@ func TestRetryClient(t *testing.T) {
 		msg      string
 		opts     []transport.Option
 	}{
-		{status: 400, attempts: 6, expect: 1, endpoint: "/", msg: `Wrapped transport with no retry`, opts: []transport.Option{
-			transport.WithNoRetryOnResponseCodes(400, 500),
-		}},
+		{status: 400, attempts: 6, expect: 1, endpoint: "/", msg: `Wrapped transport with no retry`, opts: []transport.Option{}},
 		{status: 400, attempts: 6, expect: 6, endpoint: "/", msg: `Wrapped transport with retry on code`, opts: []transport.Option{
-			transport.WithRetryOnResponseCodes(400, 500),
+			transport.WithRetryOnStatusCode(400, 500),
 		}},
 		{status: 418, attempts: 10, expect: 10, endpoint: "/", msg: `Wrapped transport until status code appears`, opts: []transport.Option{
-			transport.WithRetryUntilResponseCodes(200),
+			transport.WithRetryOnStatusGroup(status.Group4xx),
 		}},
 		{status: 400, attempts: 6, expect: 6, endpoint: "/", msg: `Wrapped transport with retry on code and retry options`, opts: []transport.Option{
-			transport.WithRetryOnResponseCodes(400, 500),
+			transport.WithRetryOnStatusGroup(status.Group4xx, status.Group5xx),
 			transport.WithRetryOptions(
 				retry.WithExponentialBackoff(400*time.Millisecond, 1.2),
 				retry.WithJitter(100*time.Millisecond),

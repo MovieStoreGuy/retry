@@ -10,9 +10,8 @@ import (
 type retryTransport struct {
 	attempts int
 	wrapped  http.RoundTripper
-
-	opts   []retry.Option
-	checks []func(*http.Response) error
+	retryer  retry.Retryer
+	checks   []func(*http.Response) error
 }
 
 type config struct {
@@ -41,14 +40,15 @@ func New(rt http.RoundTripper, attempts int, opts ...Option) (http.RoundTripper,
 		}
 	}
 	// Validate that the options will work early on
-	if _, err := retry.New(cf.rtOpts...); err != nil {
+	retryer, err := retry.New(cf.rtOpts...)
+	if err != nil {
 		return nil, err
 	}
 
 	return &retryTransport{
 		attempts: attempts,
 		wrapped:  rt,
-		opts:     cf.rtOpts,
+		retryer:  retryer,
 		checks:   cf.checks,
 	}, nil
 }
@@ -71,9 +71,9 @@ func (rt *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, errors.New(`request is nil`)
 	}
+
 	var resp *http.Response
-	// Creating a retry per RoundTrip to avoid issues with concurrent requests being made by the client
-	err := retry.Must(rt.opts...).AttemptWithContext(req.Context(), rt.attempts, func() error {
+	err := rt.retryer.DoWithContext(req.Context(), rt.attempts, func() error {
 		r, err := rt.wrapped.RoundTrip(req)
 		if err != nil {
 			return retry.AbortedRetries(err.Error())
@@ -83,6 +83,7 @@ func (rt *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		// return the error without setting response to compile with the interface
 		for _, check := range rt.checks {
 			if err = check(r); err != nil {
+				// Only close the body in the event that we going to retry again
 				if r.Body != nil {
 					r.Body.Close()
 				}
@@ -93,5 +94,6 @@ func (rt *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		resp = r
 		return nil
 	})
+
 	return resp, err
 }

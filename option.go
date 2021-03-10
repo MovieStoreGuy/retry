@@ -3,7 +3,6 @@ package retry
 import (
 	"errors"
 	"math/rand"
-	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -31,29 +30,9 @@ func WithFixedDelay(delay time.Duration) Option {
 		if delay <= 0 {
 			return errors.New(`delay must be a positive value`)
 		}
-		r.post = append(r.post, func() {
+		r.actions = append(r.actions, func(_, _ int) {
 			r.log.Info(`Delaying executon`, zap.Duration(`delay`, delay), zap.String(`step`, `fixed-delay`))
 			time.Sleep(delay)
-		})
-		return nil
-	}
-}
-
-// WithDynamicDelay allows for a reference to a delay variable to be held external to
-// the underlying retryer to allow for services such as rate limiters to impose
-func WithDynamicDelay(delay *int64) Option {
-	return func(r *retry) error {
-		if delay == nil {
-			return errors.New(`delay reference is nil`)
-		}
-		r.post = append(r.post, func() {
-			t := time.Duration(atomic.LoadInt64(delay))
-			if t < 0 {
-				r.log.Info(`Delay is negative, skipping`, zap.Duration(`delay`, t), zap.String(`step`, `dynamic-delay`))
-				return // Delay is negative so no value in pausing execution
-			}
-			r.log.Info(`Delaying execution`, zap.Duration(`delay`, t), zap.String(`step`, `dynamic-delay`))
-			time.Sleep(t)
 		})
 		return nil
 	}
@@ -66,7 +45,7 @@ func WithJitter(delay time.Duration) Option {
 		if delay <= 0 {
 			return errors.New(`delay must be a positive value`)
 		}
-		r.post = append(r.post, func() {
+		r.actions = append(r.actions, func(_, _ int) {
 			t := time.Duration(rand.Int63n(int64(delay)))
 			r.log.Info(`Delaying executon`, zap.Duration(`delay`, t), zap.String(`step`, `jitter`))
 			time.Sleep(t)
@@ -78,9 +57,6 @@ func WithJitter(delay time.Duration) Option {
 // WithExponentialBackoff will start from a fixed delay and increase the delay amount
 // by increasing it by the multiplier amount
 func WithExponentialBackoff(delay time.Duration, multiplier float64) Option {
-	// Technically not required but to help play safe since it is being shared
-	// among to different functions, access to it will require atomic
-	d := int64(delay)
 	return func(r *retry) error {
 		if delay <= 0 {
 			return errors.New(`delay must be positive value`)
@@ -88,16 +64,13 @@ func WithExponentialBackoff(delay time.Duration, multiplier float64) Option {
 		if multiplier < 1.0 {
 			return errors.New(`multiplier must be greater than 1.0`)
 		}
-		r.pre = append(r.pre, func() {
-			r.log.Info(`Setting the delay to initial value`, zap.Duration(`delay`, delay), zap.String(`step`, `expo-backoff`))
-			atomic.StoreInt64(&d, int64(delay))
-		})
-		r.post = append(r.post, func() {
-			t := atomic.LoadInt64(&d)
+
+		r.actions = append(r.actions, func(remaining, limit int) {
+			t := delay * time.Duration(multiplier*(float64(remaining-limit)))
 			r.log.Info(`Delaying execution`, zap.Duration(`delay`, time.Duration(t)))
-			time.Sleep(time.Duration(t))
-			atomic.StoreInt64(&d, int64(float64(t)*multiplier))
+			time.Sleep(t)
 		})
+
 		return nil
 	}
 }
