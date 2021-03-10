@@ -7,13 +7,12 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ Retryer = &retry{}
-
 type retry struct {
-	log  *zap.Logger
-	pre  []func() // used to reset any state beforehand
-	post []func() // used to update any state
+	log     *zap.Logger
+	actions []func(remaining, limit int)
 }
+
+var _ Retryer = (*retry)(nil)
 
 // New creates a new retry with the configured options provided.
 // An error is returned if any of the options failed to apply
@@ -41,19 +40,21 @@ func Must(opts ...Option) Retryer {
 }
 
 func (r *retry) Do(limit int, f func() error) error {
-	return r.Attempt(limit, f)
-}
-
-func (r *retry) DoWithContext(ctx context.Context, limit int, f func() error) error {
-	return r.AttemptWithContext(ctx, limit, f)
-}
-
-func (r *retry) Attempt(limit int, f func() error) error {
 	return r.do(context.Background(), limit, f)
 }
 
-func (r *retry) AttemptWithContext(ctx context.Context, limit int, f func() error) error {
+func (r *retry) DoWithContext(ctx context.Context, limit int, f func() error) error {
 	return r.do(ctx, limit, f)
+}
+
+// deprecated: Should use the Do method instead
+func (r *retry) Attempt(limit int, f func() error) error {
+	return r.Do(limit, f)
+}
+
+// deprecated: Should use the DoWithContext method instead
+func (r *retry) AttemptWithContext(ctx context.Context, limit int, f func() error) error {
+	return r.DoWithContext(ctx, limit, f)
 }
 
 func (r *retry) do(ctx context.Context, limit int, f func() error) error {
@@ -64,15 +65,15 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 		return errors.New(`invalid function provided`)
 	}
 
-	for _, p := range r.pre {
-		p()
-	}
 	// Since limit is not being check if negative, the default assumes all
 	// avaliable attempts have been exceeded
 	err := errors.New(`exceeded allowed attempts`)
+	// It is permissable to cache the channel returned here in order to avoid the locking call
+	// within the Done method.
+	done := ctx.Done()
 	for rem := limit; rem > 0; rem-- {
 		select {
-		case <-ctx.Done():
+		case <-done:
 			// Context has be finalised, need to exit
 			return ctx.Err()
 		default:
@@ -90,8 +91,8 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 		}
 
 		r.log.Error(`Failed to execute function`, zap.Error(err), zap.Int(`remaining-attempts`, rem))
-		for _, p := range r.post {
-			p()
+		for _, a := range r.actions {
+			a(rem, limit)
 		}
 	}
 	// Returns the last error recorded
