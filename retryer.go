@@ -3,12 +3,9 @@ package retry
 import (
 	"context"
 	"errors"
-
-	"go.uber.org/zap"
 )
 
 type retry struct {
-	log     *zap.Logger
 	actions []func(remaining, limit int)
 }
 
@@ -17,9 +14,7 @@ var _ Retryer = (*retry)(nil)
 // New creates a new retry with the configured options provided.
 // An error is returned if any of the options failed to apply
 func New(opts ...Option) (Retryer, error) {
-	r := &retry{
-		log: zap.NewNop(),
-	}
+	r := &retry{}
 	for _, opt := range opts {
 		if err := opt(r); err != nil {
 			return nil, err
@@ -90,7 +85,6 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 			return err
 		}
 
-		r.log.Error(`Failed to execute function`, zap.Error(err), zap.Int(`remaining-attempts`, rem))
 		for _, a := range r.actions {
 			a(rem, limit)
 		}

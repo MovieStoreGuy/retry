@@ -24,7 +24,6 @@ import (
 func TestCreatingTransport(t *testing.T) {
 	t.Parallel()
 	invalid := [][]transport.Option{
-		{transport.WithRetryOptions(retry.WithLogger(nil))},
 		{transport.WithRetryOptions(nil)},
 	}
 

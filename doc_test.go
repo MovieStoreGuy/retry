@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/MovieStoreGuy/retry"
-	"go.uber.org/zap"
 )
 
 func ExampleNew() {
@@ -25,14 +24,9 @@ func ExampleNew() {
 }
 
 func ExampleMust() {
-	log, err := zap.NewProduction()
-	if err != nil {
-		panic(err)
-	}
 	r := retry.Must(
 		retry.WithFixedDelay(100*time.Millisecond), // Ensures each failed attempt waits 100ms
 		retry.WithJitter(10*time.Millisecond),      // Ensures each failed attempt waits at most 10ms
-		retry.WithLogger(log.Named(`retry`)),       // Adds a sub logger named `retry`
 	)
 
 	_ = r.Attempt(3, func() error {

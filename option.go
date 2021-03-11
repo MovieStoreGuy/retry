@@ -4,25 +4,11 @@ import (
 	"errors"
 	"math/rand"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 // Option allows for additional functionality to be added to the Retryer
 // on creation
 type Option func(r *retry) error
-
-// WithLogger sets the logger used for the retryer since by default
-// it will use a noop logger
-func WithLogger(log *zap.Logger) Option {
-	return func(r *retry) error {
-		if log == nil {
-			return errors.New(`logger is nil`)
-		}
-		r.log = log
-		return nil
-	}
-}
 
 // WithFixedDelay will set the delay experienced after each failed attempted
 func WithFixedDelay(delay time.Duration) Option {
@@ -31,7 +17,6 @@ func WithFixedDelay(delay time.Duration) Option {
 			return errors.New(`delay must be a positive value`)
 		}
 		r.actions = append(r.actions, func(_, _ int) {
-			r.log.Info(`Delaying executon`, zap.Duration(`delay`, delay), zap.String(`step`, `fixed-delay`))
 			time.Sleep(delay)
 		})
 		return nil
@@ -47,7 +32,6 @@ func WithJitter(delay time.Duration) Option {
 		}
 		r.actions = append(r.actions, func(_, _ int) {
 			t := time.Duration(rand.Int63n(int64(delay)))
-			r.log.Info(`Delaying executon`, zap.Duration(`delay`, t), zap.String(`step`, `jitter`))
 			time.Sleep(t)
 		})
 		return nil
@@ -67,7 +51,6 @@ func WithExponentialBackoff(delay time.Duration, multiplier float64) Option {
 
 		r.actions = append(r.actions, func(remaining, limit int) {
 			t := delay * time.Duration(multiplier*(float64(remaining-limit)))
-			r.log.Info(`Delaying execution`, zap.Duration(`delay`, time.Duration(t)))
 			time.Sleep(t)
 		})
 
