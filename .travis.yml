@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - "1.15"
+  - "1.16"
+  - master
+
+install:
+  - go get -v ./...
+
+script:
+  - go vet ./...
+  - go test --cover --race --bench=. -v ./...
