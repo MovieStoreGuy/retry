@@ -13,7 +13,7 @@ func ExampleNew() {
 	if err != nil {
 		panic(err)
 	}
-	err = r.Attempt(4, func() error {
+	err = r.Do(4, func() error {
 		fmt.Println(`Woohoo`)
 		return nil
 	})
@@ -29,7 +29,7 @@ func ExampleMust() {
 		retry.WithJitter(10*time.Millisecond),      // Ensures each failed attempt waits at most 10ms
 	)
 
-	_ = r.Attempt(3, func() error {
+	_ = r.Do(3, func() error {
 		fmt.Print(`tick...`)
 		return errors.New(`boom`)
 	})

@@ -16,10 +16,4 @@ type Retryer interface {
 	// DoWithContext extendes the Do method by ensuring that any attempts are
 	// aborted if the passed context is done.
 	DoWithContext(ctx context.Context, limit int, f func() error) error
-
-	// deprecated: will be removed as part of v1.6.0
-	Attempt(limit int, f func() error) error
-
-	// deprecated: will be removed as part of v1.6.0
-	AttemptWithContext(ctx context.Context, limit int, f func() error) error
 }

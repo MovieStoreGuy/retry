@@ -42,16 +42,6 @@ func (r *retry) DoWithContext(ctx context.Context, limit int, f func() error) er
 	return r.do(ctx, limit, f)
 }
 
-// deprecated: Should use the Do method instead
-func (r *retry) Attempt(limit int, f func() error) error {
-	return r.Do(limit, f)
-}
-
-// deprecated: Should use the DoWithContext method instead
-func (r *retry) AttemptWithContext(ctx context.Context, limit int, f func() error) error {
-	return r.DoWithContext(ctx, limit, f)
-}
-
 func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 	if ctx == nil || ctx.Err() != nil {
 		return errors.New(`invalid context provided`)

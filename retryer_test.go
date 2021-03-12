@@ -30,7 +30,7 @@ func TestFailedAttempts(t *testing.T) {
 
 	for _, test := range tests {
 		called = 0
-		err := retry.Must().Attempt(test.limit, test.f)
+		err := retry.Must().Do(test.limit, test.f)
 		assert.Equal(t, test.expect, called, test.msg)
 		assert.LessOrEqual(t, called, test.limit, test.msg)
 		assert.Error(t, err, test.msg)
@@ -60,7 +60,7 @@ func TestSuccessfulAttempts(t *testing.T) {
 
 	for _, test := range good {
 		called = 0
-		err := retry.Must().Attempt(test.limit, test.f)
+		err := retry.Must().Do(test.limit, test.f)
 		assert.Equal(t, test.expect, called, test.msg)
 		assert.LessOrEqual(t, called, test.limit, test.msg)
 		assert.NoError(t, err, test.msg)
@@ -82,7 +82,7 @@ func TestAttemptsUsingContext(t *testing.T) {
 
 	for _, test := range tests {
 		called := 0
-		err := retry.Must().AttemptWithContext(test.ctx, 1, func() error {
+		err := retry.Must().DoWithContext(test.ctx, 1, func() error {
 			called++
 			return nil
 		})
@@ -91,7 +91,7 @@ func TestAttemptsUsingContext(t *testing.T) {
 	}
 
 	ctx, cancel = context.WithCancel(context.Background())
-	err := retry.Must().AttemptWithContext(ctx, 2, func() error {
+	err := retry.Must().DoWithContext(ctx, 2, func() error {
 		cancel()
 		return errors.New(`discard`)
 	})
@@ -150,7 +150,7 @@ func TestWithAppliedOptions(t *testing.T) {
 		r, err := retry.New(apply...)
 		require.NoError(t, err, `All options configured are valid`)
 		called := 0
-		err = r.Attempt(6, func() error {
+		err = r.Do(6, func() error {
 			called++
 			return errors.New(`discard`)
 		})
