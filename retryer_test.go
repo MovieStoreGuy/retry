@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/MovieStoreGuy/retry"
 )
@@ -92,7 +91,7 @@ func TestAttemptsUsingContext(t *testing.T) {
 	}
 
 	ctx, cancel = context.WithCancel(context.Background())
-	err := retry.Must(retry.WithLogger(zaptest.NewLogger(t))).AttemptWithContext(ctx, 2, func() error {
+	err := retry.Must().AttemptWithContext(ctx, 2, func() error {
 		cancel()
 		return errors.New(`discard`)
 	})
@@ -103,7 +102,6 @@ func TestInvalidOptions(t *testing.T) {
 	t.Parallel()
 
 	invalid := []retry.Option{
-		retry.WithLogger(nil),
 		retry.WithFixedDelay(-time.Second),
 		retry.WithFixedDelay(0),
 		retry.WithJitter(-time.Second),
@@ -126,7 +124,6 @@ func TestValidOption(t *testing.T) {
 	t.Parallel()
 
 	valid := []retry.Option{
-		retry.WithLogger(zaptest.NewLogger(t)),
 		retry.WithFixedDelay(time.Second),
 		retry.WithJitter(time.Second),
 		retry.WithExponentialBackoff(time.Second, 2.8),
@@ -141,13 +138,12 @@ func TestValidOption(t *testing.T) {
 
 func TestWithAppliedOptions(t *testing.T) {
 	t.Parallel()
-	log := zaptest.NewLogger(t)
 
 	opts := [][]retry.Option{
-		{retry.WithLogger(log.Named(`no-other-options`))},
-		{retry.WithLogger(log), retry.WithFixedDelay(10 * time.Millisecond)},
-		{retry.WithLogger(log), retry.WithJitter(10 * time.Millisecond)},
-		{retry.WithLogger(log), retry.WithFixedDelay(time.Millisecond), retry.WithExponentialBackoff(10*time.Millisecond, 2.4)},
+		{},
+		{retry.WithFixedDelay(10 * time.Millisecond)},
+		{retry.WithJitter(10 * time.Millisecond)},
+		{retry.WithFixedDelay(time.Millisecond), retry.WithExponentialBackoff(10*time.Millisecond, 2.4)},
 	}
 
 	for _, apply := range opts {
