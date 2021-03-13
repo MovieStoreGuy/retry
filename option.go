@@ -50,7 +50,7 @@ func WithExponentialBackoff(delay time.Duration, multiplier float64) Option {
 		}
 
 		r.actions = append(r.actions, func(remaining, limit int) {
-			t := delay * time.Duration(multiplier*(float64(remaining-limit)))
+			t := delay * time.Duration(multiplier*(float64(limit-remaining)))
 			time.Sleep(t)
 		})
 
