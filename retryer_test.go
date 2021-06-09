@@ -23,7 +23,7 @@ func TestFailedAttempts(t *testing.T) {
 		msg    string
 	}{
 		{f: func() error { called++; return errors.New(`discard`) }, expect: 4, limit: 4, msg: `testing constant failure`},
-		{f: func() error { called++; return retry.AbortedRetries("doom") }, expect: 1, limit: 2, msg: `testing unrecoverable error`},
+		{f: func() error { called++; return retry.AbortedRetries(errors.New("doom")) }, expect: 1, limit: 2, msg: `testing unrecoverable error`},
 		{f: nil, expect: 0, limit: 1, msg: `testing nil function`},
 		{f: func() error { return nil }, expect: 0, limit: 0, msg: `testing with no attempts`},
 	}
