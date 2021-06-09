@@ -1,64 +1,61 @@
 package retry
 
-import "fmt"
-
-type failed int8
-
-var named = map[failed]string{
-	noIssue:  "no-issue",
-	exceeded: "exceeded",
-	abort:    "aborted",
-}
-
-const (
-	noIssue failed = iota
-	exceeded
-	abort
+import (
+	"errors"
+	"fmt"
 )
 
-func (f failed) String() string {
-	if s, ok := named[f]; ok {
-		return s
+type exceeded struct {
+	err error
+}
+
+func (e exceeded) Error() string {
+	return fmt.Sprintf("exceeded attempts: %v", e.err)
+}
+
+func (e exceeded) Unwrap() error {
+	return e.err
+}
+
+// HasExceeded checks error to validate
+// if the exectued function has notified that it exceeded the limit.
+func HasExceeded(err error) bool {
+	if err == nil {
+		return false
 	}
-	return `unknown`
-}
-
-type failedRetries struct {
-	msg  string
-	fail failed
-}
-
-func (fr *failedRetries) Error() string {
-	return fmt.Sprintf(`[retry:%v] %s`, fr.fail, fr.msg)
+	return errors.As(err, &exceeded{})
 }
 
 // ExceededRetries wraps the message passed and returns
 // an error that be read by the error handler within the retry client.
-func ExceededRetries(msg string) error {
-	return &failedRetries{msg: msg, fail: exceeded}
+func ExceededRetries(err error) error {
+	return exceeded{err: err}
+}
+
+type abort struct {
+	err error
+}
+
+func (a abort) Error() string {
+	return fmt.Sprintf("aborted retries: %v", a.err)
+}
+
+func (a abort) Unwrap() error {
+	return a.err
 }
 
 // AbortedRetries wraps the message passed and returns
 // an error that be read by the error handler within the retry client.
-func AbortedRetries(msg string) error {
-	return &failedRetries{msg: msg, fail: abort}
+func AbortedRetries(err error) error {
+	return abort{err: err}
 }
 
 // HasAborted checks the error to validate
 // if the executed function has notified that it should
 // abort now.
 func HasAborted(err error) bool {
-	if e, ok := err.(*failedRetries); ok {
-		return e.fail == abort
+	if err == nil {
+		return false
 	}
-	return false
-}
-
-// HasExceeded checks error to validate
-// if the exectued function has notified that it exceeded the limit.
-func HasExceeded(err error) bool {
-	if e, ok := err.(*failedRetries); ok {
-		return e.fail == exceeded
-	}
-	return false
+	return errors.As(err, &abort{})
 }

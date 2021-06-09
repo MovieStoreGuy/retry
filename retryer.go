@@ -80,5 +80,5 @@ func (r *retry) do(ctx context.Context, limit int, f func() error) error {
 		}
 	}
 	// Returns the last error recorded
-	return ExceededRetries(err.Error())
+	return ExceededRetries(err)
 }
